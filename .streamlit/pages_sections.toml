@@ -1,0 +1,7 @@
+[[pages]]
+path = "src/ai-ocr.py"
+name = "AI-OCR"
+
+[[pages]]
+path = "src/model_configurations.py"
+name = "Model configurations"
