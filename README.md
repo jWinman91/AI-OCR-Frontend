@@ -68,4 +68,5 @@ Within the web application you'll then find two pages on the sidebar:
 
 ## Acknowledgments
 
+- [Streamlit](https://streamlit.io/) - Python-Framework for frontend.
 - [Hugging Face](https://huggingface.co/) - Framework for working with state-of-the-art natural language processing models.
