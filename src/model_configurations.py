@@ -9,10 +9,7 @@ from src.ai_ocr_client.request_be import BeRequest
 class ModelConfig:
     def __init__(self, ip: str = "127.0.0.1", port: int = 5000, protocol: str = "http"):
         self._request_be = BeRequest(ip, port, protocol)
-        self._all_model_types = [
-            "llama_cpp",
-            "open_ai"
-        ]
+        self._all_model_types = self._request_be.get("get_all_model_wrapper")
         st.session_state["configured_models"] = st.session_state.get("configured_models",
                                                                      self._request_be.get("get_all_unmodified_models"))
 
@@ -60,6 +57,7 @@ class ModelConfig:
                         "config_dict": config_dict
                     })
                     st.session_state["configured_models"] = self._request_be.get("get_all_unmodified_models")
+                    st.success(f"Configuration for model {form_name} was saved.")
 
     def build_config(self, default_name: Union[str, None] = None, default_config: Union[dict, None] = None):
         models_container = st.container(border=True)
