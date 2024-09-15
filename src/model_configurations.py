@@ -39,7 +39,7 @@ class ModelConfig:
                     config_dict["clip_model_name"] = st.text_input("clip model name",
                                                                    default_values.get("clip_model_name", None))
 
-                    config_dict["construct_params"] = {"n_gpu_layers": -1}
+                    config_dict["construct_params"] = {"n_gpu_layers": -1, "n_threads": 3}
                     construct_params = default_values.get("construct_params", {})
                     config_dict["construct_params"]["n_ctx"] = st.number_input("Context tokens", 0, 10_000,
                                                                                construct_params.get("n_ctx", None), 1)
