@@ -52,7 +52,7 @@ class AiOcrFrontend:
                                   options=st.session_state["configured_models"].keys())
             placeholder = "Describe which characters shall be extracted. Give context about the image, if necessary..."
             prompt = st.text_area("Prompt", placeholder=placeholder)
-            temperature = st.slider("Temperature", 0, 1, 0)
+            temperature = st.slider("Temperature", 0., 1., 0., step=0.01)
             top_p = st.number_input("Top p", 0., 1., 0.1)
 
             payload = {
