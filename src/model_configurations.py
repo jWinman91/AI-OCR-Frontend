@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 from streamlit_js_eval import streamlit_js_eval
 from typing import Union, List
@@ -33,16 +34,20 @@ class ModelConfig:
 
         if form_name is not None:
             with st.form(form_name):
-                if model_wrapper == "llama_cpp":
+                if model_wrapper == "llama_cpp" or "transformers" in model_wrapper:
+                    config_dict["access_token"] = st.text_input("Access token", os.getenv("ENV_ACCESS_TOKEN", None))
                     config_dict["repo_id"] = st.text_input("Repository ID", default_values.get("repo_id", None))
                     config_dict["file_name"] = st.text_input("file name", default_values.get("file_name", None))
                     config_dict["clip_model_name"] = st.text_input("clip model name",
                                                                    default_values.get("clip_model_name", None))
 
-                    config_dict["construct_params"] = {"n_gpu_layers": -1, "n_threads": 3}
-                    construct_params = default_values.get("construct_params", {})
-                    config_dict["construct_params"]["n_ctx"] = st.number_input("Context tokens", 0, 10_000,
-                                                                               construct_params.get("n_ctx", None), 1)
+                    if model_wrapper == "llama_cpp":
+                        config_dict["construct_params"] = {"n_gpu_layers": -1, "n_threads": 3}
+                        construct_params = default_values.get("construct_params", {})
+                        config_dict["construct_params"]["n_ctx"] = st.number_input("Context tokens", 0, 10_000,
+                                                                                   construct_params.get("n_ctx", None), 1)
+                    else:
+                        config_dict["construct_params"] = {}
                 elif model_wrapper == "open_ai":
                     config_dict["model_name"] = st.text_input("Model name", default_values.get("model_name", None))
                     config_dict["openai_api_key"] = st.text_input("API key", None)
