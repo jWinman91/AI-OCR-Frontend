@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import pandas as pd
 import time
 import streamlit as st
@@ -10,14 +12,19 @@ from src.ai_ocr_client.request_be import BeRequest
 
 class AiOcrFrontend:
     request_be: BeRequest
-    text: str
+    temperature: float
+    top_p: float
 
     def __init__(self, ip: str = "127.0.0.1", port: int = 5000, protocol: str = "http") -> None:
         self._request_be = BeRequest(ip, port, protocol)
+        self._temperature = 0.1
+        self._top_p = 0.1
+
         st.session_state["configured_models"] = st.session_state.get("configured_models",
                                                                      self._request_be.get("get_all_unmodified_models"))
         st.session_state["uploaded_images"] = st.session_state.get("uploaded_images", [])
         st.session_state["df"] = st.session_state.get("df", None)
+        st.session_state["pot_suggestions"] = st.session_state.get("pot_suggestions", None)
 
     def build_upload_widget(self) -> None:
         with st.form("Upload_widget", clear_on_submit=True):
@@ -45,6 +52,7 @@ class AiOcrFrontend:
     def build_page(self) -> None:
         self.build_upload_widget()
         self.build_run_ocr()
+        self.build_run_plot()
 
     def build_run_ocr_form(self) -> Union[pd.DataFrame, None]:
         with st.form("ocr_form"):
@@ -98,6 +106,86 @@ class AiOcrFrontend:
                 return pd.concat(dfs)
 
             return None
+
+    def build_run_plot_form(self) -> Callable | None:
+        with (st.form("plot_form")):
+            meta_data_df = {
+                "dtypes": {col_name: dtype.name for col_name, dtype in st.session_state["df"].dtypes.to_dict().items()},
+                "describe": st.session_state["df"].describe().to_dict()
+            }
+            if st.session_state.get("plot_suggestions", None) is None:
+                plot_suggestion_payload = {
+                    "meta_data_df": meta_data_df,
+                    "parameters": {
+                        "temperature": self._temperature,
+                        "top_p": self._top_p
+                    }
+                }
+                response_json = self._request_be.post("plot_suggestions", payload=plot_suggestion_payload)
+                st.session_state["plot_suggestions"] = response_json["list_of_suggestions"]
+
+            plot_suggestion = st.radio("Choose a plot suggestion 👉", key="plot_suggestion", index=None,
+                                       options=st.session_state["plot_suggestions"])
+            custom = st.text_area("Custom plot suggestion", height=68)
+            if custom is not None:
+                plot_suggestion = custom
+            model_name = st.radio("Choose a model 👉", key="model_choser_2",
+                                  options=st.session_state["configured_models"].keys())
+            temperature_plot = st.slider("Temperature", 0., 1., 0., step=0.01)
+            top_p_plot = st.number_input("Top p", 0., 1., 0.1)
+
+            plot_payload = {
+                "meta_data_df": meta_data_df,
+                "prompt_suggestion": plot_suggestion,
+                "model_name": model_name,
+                "parameters": {
+                    "temperature": temperature_plot,
+                    "top_p": top_p_plot
+                }
+            }
+
+            run_plot_button = st.form_submit_button("Run Plot")
+
+            if run_plot_button and model_name is None:
+                st.toast("No model selected. Configure a model first!")
+                return None
+
+            if run_plot_button and plot_suggestion is None:
+                st.toast("No plot suggestion selected.")
+                return None
+
+            if run_plot_button:
+                response = self._request_be.post("plot_code", payload=plot_payload)
+                code = response["code"]
+                prompt_check = response["prompt_check"]
+                code_check = response["code_check"]
+
+                if not prompt_check:
+                    st.error("Prompt contains malicious behaviour that can't be executed.")
+                    return None
+
+                if not code_check and code is not None:
+                    st.error("Code contains malicious behaviour that can't be executed.")
+                    return None
+
+                localdict = {}
+                def plot(df):
+                    pass
+                exec(code, globals(), localdict)
+                return localdict["plot"]
+
+            return None
+
+    def build_run_plot(self) -> None:
+        if st.session_state["df"] is not None:
+            with st.container(border=True):
+                plot_func = self.build_run_plot_form()
+
+            with st.container(border=True):
+                if plot_func is not None:
+                    df = st.session_state["df"].copy()
+                    fig, ax = plot_func(df)
+                    st.pyplot(fig)
 
     def build_run_ocr(self) -> None:
         with st.container(border=True):
