@@ -55,12 +55,11 @@ class ModelConfig:
                 form_button = st.form_submit_button('Update model')
 
                 if form_button:
-                    print(config_dict)
-                    print(form_name)
-                    self._request_be.post("insert_model", payload={
-                        "model_name": form_name,
-                        "config_dict": config_dict
-                    })
+                    with st.spinner(f"Updating model {form_name}..."):
+                        self._request_be.post("insert_model", payload={
+                            "model_name": form_name,
+                            "config_dict": config_dict
+                        })
                     st.session_state["configured_models"] = self._request_be.get("get_all_unmodified_models")
                     st.success(f"Configuration for model {form_name} was saved.")
 
@@ -73,7 +72,8 @@ class ModelConfig:
             if model_name in st.session_state["configured_models"]:
                 delete = st.button("Delete model", type="primary", key=default_name)
                 if delete:
-                    self._request_be.post("delete_models", payload=[model_name])
+                    with st.spinner(f"Deleting model {model_name}..."):
+                        self._request_be.post("delete_models", payload=[model_name])
                     st.session_state["configured_models"] = self._request_be.get("get_all_models")
                     streamlit_js_eval(js_expressions="parent.window.location.reload()")
 
