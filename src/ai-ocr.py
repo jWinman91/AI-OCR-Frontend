@@ -32,10 +32,11 @@ class AiOcrFrontend:
             upload_button = st.form_submit_button("Upload images")
 
             if len(uploaded_images) > 0 and upload_button:
-                success = self._request_be.post("upload_images", None, images=uploaded_images)
-                logger.info(f"Upload successful: {success}.")
+                with st.spinner("Uploading images..."):
+                    success = self._request_be.post("upload_images", None, images=uploaded_images)
+                    logger.info(f"Upload successful: {success}.")
 
-                st.session_state["uploaded_images"] = [image.name for image in uploaded_images]
+                    st.session_state["uploaded_images"] = [image.name for image in uploaded_images]
 
             if len(st.session_state["uploaded_images"]) > 0:
                 with st.container(border=True):
@@ -155,24 +156,25 @@ class AiOcrFrontend:
                 return None
 
             if run_plot_button:
-                response = self._request_be.post("plot_code", payload=plot_payload)
-                code = response["code"]
-                prompt_check = response["prompt_check"]
-                code_check = response["code_check"]
+                with st.spinner("Plot in progress. Please wait."):
+                    response = self._request_be.post("plot_code", payload=plot_payload)
+                    code = response["code"]
+                    prompt_check = response["prompt_check"]
+                    code_check = response["code_check"]
 
-                if not prompt_check:
-                    st.error("Prompt contains malicious behaviour that can't be executed.")
-                    return None
+                    if not prompt_check:
+                        st.error("Prompt contains malicious behaviour that can't be executed.")
+                        return None
 
-                if not code_check and code is not None:
-                    st.error("Code contains malicious behaviour that can't be executed.")
-                    return None
+                    if not code_check and code is not None:
+                        st.error("Code contains malicious behaviour that can't be executed.")
+                        return None
 
-                localdict = {}
-                def plot(df):
-                    pass
-                exec(code, globals(), localdict)
-                return localdict["plot"]
+                    localdict = {}
+                    def plot(df):
+                        pass
+                    exec(code, globals(), localdict)
+                    return localdict["plot"]
 
             return None
 
@@ -181,11 +183,11 @@ class AiOcrFrontend:
             with st.container(border=True):
                 plot_func = self.build_run_plot_form()
 
-            with st.container(border=True):
-                if plot_func is not None:
-                    df = st.session_state["df"].copy()
-                    fig, ax = plot_func(df)
-                    st.pyplot(fig)
+                with st.container(border=True):
+                    if plot_func is not None:
+                        df = st.session_state["df"].copy()
+                        fig, ax = plot_func(df)
+                        st.pyplot(fig)
 
     def build_run_ocr(self) -> None:
         with st.container(border=True):
